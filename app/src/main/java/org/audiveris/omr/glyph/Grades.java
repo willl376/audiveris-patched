@@ -67,6 +67,9 @@ public abstract class Grades
     /** Grade for a good BarConnector. */
     public static final double goodBarConnectorGrade = constants.goodBarConnectorGrade.getValue();
 
+    /** Grade for a good barline. */
+    public static final double goodBarlineGrade = constants.goodBarlineGrade.getValue();
+
     /** Grade for a rather good head. */
     public static final double ratherGoodHeadGrade = constants.ratherGoodHeadGrade.getValue();
 
@@ -121,6 +124,10 @@ public abstract class Grades
         private final Constant.Ratio goodBarConnectorGrade = new Constant.Ratio(
                 0.65,
                 "Good interpretation grade for a bar connector");
+
+        private final Constant.Ratio goodBarlineGrade = new Constant.Ratio(
+                0.6,
+                "Good interpretation grade for a barline");
 
         private final Constant.Ratio goodInterGrade = new Constant.Ratio(
                 0.5,

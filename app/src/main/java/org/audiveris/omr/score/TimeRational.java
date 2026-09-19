@@ -200,7 +200,7 @@ public class TimeRational
                 final int den = Integer.decode(tokens[1].trim());
                 if ((den < 0) || (den > 99)) {
                     throw new IllegalArgumentException(
-                            "denominator " + num + " outside [0..99] range");
+                            "denominator " + den + " outside [0..99] range");
                 }
 
                 yield new TimeRational(num, den);

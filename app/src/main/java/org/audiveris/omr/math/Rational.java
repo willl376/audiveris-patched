@@ -21,7 +21,6 @@
 // </editor-fold>
 package org.audiveris.omr.math;
 
-import java.math.BigInteger;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -157,23 +156,12 @@ public class Rational
             return 0;
         }
 
-        int a = this.num * that.den;
-        int b = this.den * that.num;
+        // Cross-multiply in long, whose range is large enough to hold the product of any
+        // two int values without overflow (|int * int| <= 2^62 < Long.MAX_VALUE)
+        final long a = (long) this.num * that.den;
+        final long b = (long) this.den * that.num;
 
-        // Detect overflow, using the fact that den's are always >= 1
-        if ((Integer.signum(b) != Integer.signum(that.num)) || (Integer.signum(a) != Integer.signum(
-                this.num))) {
-            BigInteger bigThisNum = BigInteger.valueOf(this.num);
-            BigInteger bigThisDen = BigInteger.valueOf(this.den);
-            BigInteger bigThatNum = BigInteger.valueOf(that.num);
-            BigInteger bigThatDen = BigInteger.valueOf(that.den);
-            BigInteger A = bigThisNum.multiply(bigThatDen);
-            BigInteger B = bigThisDen.multiply(bigThatNum);
-
-            return A.compareTo(B);
-        } else {
-            return Integer.compare(a, b);
-        }
+        return Long.compare(a, b);
     }
 
     //---------//

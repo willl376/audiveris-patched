@@ -22,6 +22,7 @@
 package org.audiveris.omr.sig.inter;
 
 import org.audiveris.omr.glyph.Glyph;
+import org.audiveris.omr.glyph.Grades;
 import org.audiveris.omr.glyph.Shape;
 import org.audiveris.omr.sheet.PartBarline;
 import org.audiveris.omr.sheet.Sheet;
@@ -303,7 +304,7 @@ public class BarlineInter
     @Override
     public boolean isGood ()
     {
-        return getGrade() >= 0.6; // TODO, quick & dirty
+        return getGrade() >= Grades.goodBarlineGrade;
     }
 
     //------------//

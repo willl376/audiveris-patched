@@ -427,8 +427,9 @@ public class TextLine
     {
         int pointSize = word.getFontInfo().pointSize;
 
-        // TODO: very rough value to be refined and explained!
-        int val = (int) Math.rint((constants.maxCharDx.getValue() * pointSize) / 2.0);
+        // Max gap between two chars in a word, as a ratio of the word point size
+        int val = (int) Math.rint(constants.maxCharDx.getValue() * pointSize * constants
+                .charGapFontRatio.getValue());
 
         return val;
     }
@@ -946,5 +947,9 @@ public class TextLine
         private final Scale.Fraction maxCharDx = new Scale.Fraction(
                 1.0,
                 "Max horizontal gap between two chars in a word");
+
+        private final Constant.Ratio charGapFontRatio = new Constant.Ratio(
+                0.5,
+                "Max gap between two chars in a word, as a ratio of the word point size");
     }
 }

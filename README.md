@@ -1,110 +1,56 @@
-# WARNING
-### Beware of sites [audiveris.com](https://audiveris.com/) and [audiveris.net](https://audiveris.net/)!
+# Audiveris (patched)
 
-```diff
-- The sites https://audiveris.com https://audiveris.net  (note the `.com` and `.net` extensions)
--  have nothing to do with Audiveris.
-- They are reported to be high-risk websites, flagged by online security scanners as potential scams.
+Personal copy/fork of [Audiveris](https://github.com/Audiveris/audiveris) (branch
+`development`) carrying a set of local improvements, with the compiled application
+attached to [Releases](https://github.com/willl376/audiveris-patched/releases/latest).
+
+- Base commit: `223a94c` (Merge pull request #1025 from SilverGreen93/mihai_fit_width)
+- Branch: `development` (rebased onto the full upstream history at the base commit)
+- Compiled Linux x86_64 distribution: see Release assets (`audiveris-app-patched.tar.gz`)
+- Raw patch: [`PATCH.diff`](PATCH.diff)
+
+## Changes in this patch
+
+### 1. `Grades.java` — new `goodBarlineGrade` constant
+Added a named constant `goodBarlineGrade` (default `0.6`) for barline interpretation grading.
+
+### 2. `Rational.java` — overflow-safe, faster `compareTo`
+The cross-products `this.num * that.den` and `this.den * that.num` were computed in
+`int`, which can silently overflow for large numerators/denominators, and only fell back
+to a slow `BigInteger` re-computation when sign bits disagreed. The products are now
+computed in `long` — the product of any two `int` values always fits in a `long` — so the
+comparison is correct, simpler, and avoids `BigInteger` entirely.
+
+### 3. `TimeRational.java` — corrected error message
+The parser's exception message printed `num` where the offending denominator `den` was
+meant. Fixed.
+
+### 4. `StemsRetriever.java` — simplified abnormal-head marking
+Removed a disabled and unreliable block that attempted to re-link a stem-less head to a
+vertical seed. A stem-needing head with no `HeadStemRelation` is now simply marked
+abnormal (see comment in code for the reasoning).
+
+### 5. `BarlineInter.java` — use the named grading constant
+`isGood()` now uses `Grades.goodBarlineGrade` instead of a hard-coded anonymous `0.6`
+(which previously carried a `// TODO, quick & dirty` comment).
+
+### 6. `TextLine.java` — tunable character-gap ratio
+The maximum horizontal gap between two characters in a word is now computed as
+`maxCharDx * pointSize * charGapFontRatio` using a new `charGapFontRatio` constant
+(default `0.5`), replacing the previous rough `pointSize / 2` heuristic.
+
+### 7. `RationalTest.java` — regression test for `compareTo` overflow
+Added `testCompareToOverflow`, which exercises cross-products that overflow the `int`
+range (e.g. `1_500_000_000/1` vs `1_000_000_000/3`).
+
+## How it was built
+
+Requires a JDK and Gradle (wrapper included):
+
+```bash
+export JAVA_HOME=/usr/lib/jvm/java-25-openjdk-amd64
+./gradlew :app:installDist
 ```
-| audiveris.com | audiveris.net |
-| :---:         | :---:         |
-|![](https://github.com/Audiveris/audiveris.github.io/blob/master/assets/images/audiveris.com.png)|![](https://github.com/Audiveris/audiveris.github.io/blob/master/assets/images/audiveris.net.png)|
 
-```diff
-- These twin sites are aesthetically pleasing and look like advertisement for the Audiveris software.
-- However, users report that links redirect to pages dedicated to cryptocurrencies, sports betting, etc.
-- They have all the hallmarks of phishing sites…
-```
-
-![](https://github.com/Audiveris/docs/blob/master/images/SplashLogo.png)
-Logo crafted by [Katka](https://www.facebook.com/katkastreetart/)
-
-# Audiveris - Open-source Optical Music Recognition
-
-The goal of an OMR application is to allow the end-user to transcribe a score image into
-its symbolic counterpart.
-This opens the door to its further use by many kinds of digital processing such as
-playback, music edition, searching, republishing, etc.
-
-The Audiveris application is built around the tight integration of two main components:
-an OMR engine and an OMR editor.
-- The OMR engine combines many techniques, depending on the type of entities to be recognized
--- *ad-hoc* methods for lines, image morphological closing for beams, external OCR for texts,
-template matching for heads, neural network for all other fixed-size shapes.   
-Significant progresses have been made, especially regarding poor-quality scores,
-but experience tells us that a 100% recognition ratio is simply out of reach in many cases.
-- The OMR editor thus comes into play to overcome engine weaknesses in convenient ways.
-The user can preselect processing switches to adapt the OMR engine before launching the
-transcription of the current score.
-Then the remaining mistakes can generally be quickly fixed
-via the manual editing of a few music symbols.
-
-## Key characteristics
-
-* Good recognition efficiency on real-world quality scores (as those seen on the [IMSLP][imslp] site)
-* Effective support for large scores (with up to hundreds of pages)
-* Convenient user-oriented interface to detect and correct most OMR errors
-* Available on Windows, Linux and macOS
-* Open source
-
-The core of engine music information (OMR data) is fully documented and made publicly available,
-either directly via XML-based `.omr` project files or via the Java API of this software.   
-Audiveris comes with an integrated exporter to write (a subset of) this OMR data into
-[MusicXML][musicxml] 4.0 format.
-In the future, other exporters are expected to build upon OMR data to support other target formats.
-
-## Stable releases
-
-On a rather regular basis, typically every 6 to 12 months, a new release is made available
-on the dedicated [Audiveris Releases][releases] page.
-
-The goal of a release is to provide significant improvements, well tested and integrated,
-resulting in a software as easy as possible to install and use.
-
-Since the release 5.5, an installer is provided for each of the main OSes
-(**Windows**, **Linux** and **macOS**) and comes with a pre-installed Java Runtime Environment (JRE).
-You can download any installer file from the **Assets** section, at the end of the chosen release:
-
-| OS name | Installer file extension |
-| :---    | :---   |
-| Windows | `.msi` |
-| Linux   | `.deb` |
-| macOS   | `.dmg` |
-
-Additional installation means:
-- Under **Windows**, the _`winget`_ or _`scoop`_ utilities can be directly used to install the application.
-- Under **Linux**, a _`flatpak`_ package, also with a suitable JRE included,
-can be installed from the [Flathub] site.
-
-See installers details in the handbook [installation] section.
-
-## Development versions
-
-The Audiveris project is developed on GitHub, the site you are reading.  
-Any one can clone, build and run this software. 
-The needed tools are `git`, `gradle` and a Java Development Kit (`jdk`),
-as described in the handbook [sources][sources] section.
-
-There are two main branches in the Audiveris project:
-- the `master` branch is the GitHub default branch;
-we use it for releases, and only for them.
-- the `development` branch is the one where all developments continuously take place;
-Periodically, when a release is to be made, we merge the development branch into the master branch.
-
-See details in the [Wiki article][workflow] dedicated to the chosen development workflow.
-
-## Further Information
-
-- For users: the Audiveris [User Handbook][handbook].
-- For developers: the [Project Structure][project] and the [Wiki][audiveris-wiki] set of articles.
-
-[audiveris-wiki]: https://github.com/Audiveris/audiveris/wiki
-[Flathub]:        https://flathub.org/apps/org.audiveris.audiveris
-[handbook]:       https://audiveris.github.io/audiveris/
-[imslp]:          https://imslp.org/
-[installation]:   https://audiveris.github.io/audiveris/_pages/tutorials/install/binaries/
-[musicxml]:       http://www.musicxml.com/
-[project]:        project-structure.md
-[releases]:       https://github.com/Audiveris/audiveris/releases
-[sources]:        https://audiveris.github.io/audiveris/_pages/tutorials/install/sources/
-[workflow]:       https://github.com/Audiveris/audiveris/wiki/Git-Workflow
+Distribution output: `app/build/install/app/` (contains the `bin/Audiveris` launcher and
+`lib/audiveris.jar`). The release asset is a tarball of that directory.

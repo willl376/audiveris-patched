@@ -1,0 +1,202 @@
+diff --git a/app/src/main/java/org/audiveris/omr/glyph/Grades.java b/app/src/main/java/org/audiveris/omr/glyph/Grades.java
+index 5e76a84..b62d69d 100644
+--- a/app/src/main/java/org/audiveris/omr/glyph/Grades.java
++++ b/app/src/main/java/org/audiveris/omr/glyph/Grades.java
+@@ -67,6 +67,9 @@ public abstract class Grades
+     /** Grade for a good BarConnector. */
+     public static final double goodBarConnectorGrade = constants.goodBarConnectorGrade.getValue();
+ 
++    /** Grade for a good barline. */
++    public static final double goodBarlineGrade = constants.goodBarlineGrade.getValue();
++
+     /** Grade for a rather good head. */
+     public static final double ratherGoodHeadGrade = constants.ratherGoodHeadGrade.getValue();
+ 
+@@ -122,6 +125,10 @@ public abstract class Grades
+                 0.65,
+                 "Good interpretation grade for a bar connector");
+ 
++        private final Constant.Ratio goodBarlineGrade = new Constant.Ratio(
++                0.6,
++                "Good interpretation grade for a barline");
++
+         private final Constant.Ratio goodInterGrade = new Constant.Ratio(
+                 0.5,
+                 "Default good interpretation grade");
+diff --git a/app/src/main/java/org/audiveris/omr/math/Rational.java b/app/src/main/java/org/audiveris/omr/math/Rational.java
+index e19688b..5bb24f6 100644
+--- a/app/src/main/java/org/audiveris/omr/math/Rational.java
++++ b/app/src/main/java/org/audiveris/omr/math/Rational.java
+@@ -21,7 +21,6 @@
+ // </editor-fold>
+ package org.audiveris.omr.math;
+ 
+-import java.math.BigInteger;
+ 
+ import javax.xml.bind.annotation.XmlAccessType;
+ import javax.xml.bind.annotation.XmlAccessorType;
+@@ -157,23 +156,12 @@ public class Rational
+             return 0;
+         }
+ 
+-        int a = this.num * that.den;
+-        int b = this.den * that.num;
++        // Cross-multiply in long, whose range is large enough to hold the product of any
++        // two int values without overflow (|int * int| <= 2^62 < Long.MAX_VALUE)
++        final long a = (long) this.num * that.den;
++        final long b = (long) this.den * that.num;
+ 
+-        // Detect overflow, using the fact that den's are always >= 1
+-        if ((Integer.signum(b) != Integer.signum(that.num)) || (Integer.signum(a) != Integer.signum(
+-                this.num))) {
+-            BigInteger bigThisNum = BigInteger.valueOf(this.num);
+-            BigInteger bigThisDen = BigInteger.valueOf(this.den);
+-            BigInteger bigThatNum = BigInteger.valueOf(that.num);
+-            BigInteger bigThatDen = BigInteger.valueOf(that.den);
+-            BigInteger A = bigThisNum.multiply(bigThatDen);
+-            BigInteger B = bigThisDen.multiply(bigThatNum);
+-
+-            return A.compareTo(B);
+-        } else {
+-            return Integer.compare(a, b);
+-        }
++        return Long.compare(a, b);
+     }
+ 
+     //---------//
+diff --git a/app/src/main/java/org/audiveris/omr/score/TimeRational.java b/app/src/main/java/org/audiveris/omr/score/TimeRational.java
+index 63b9a07..0f312ee 100644
+--- a/app/src/main/java/org/audiveris/omr/score/TimeRational.java
++++ b/app/src/main/java/org/audiveris/omr/score/TimeRational.java
+@@ -200,7 +200,7 @@ public class TimeRational
+                 final int den = Integer.decode(tokens[1].trim());
+                 if ((den < 0) || (den > 99)) {
+                     throw new IllegalArgumentException(
+-                            "denominator " + num + " outside [0..99] range");
++                            "denominator " + den + " outside [0..99] range");
+                 }
+ 
+                 yield new TimeRational(num, den);
+diff --git a/app/src/main/java/org/audiveris/omr/sheet/stem/StemsRetriever.java b/app/src/main/java/org/audiveris/omr/sheet/stem/StemsRetriever.java
+index 2eab05a..f1cf016 100644
+--- a/app/src/main/java/org/audiveris/omr/sheet/stem/StemsRetriever.java
++++ b/app/src/main/java/org/audiveris/omr/sheet/stem/StemsRetriever.java
+@@ -319,38 +319,13 @@ public class StemsRetriever
+      */
+     private void checkNeededStems (List<Inter> systemHeads)
+     {
+-        HeadLoop:
+         for (Inter hInter : systemHeads) {
+             if (ShapeSet.StemHeads.contains(hInter.getShape())) {
+                 if (!sig.hasRelation(hInter, HeadStemRelation.class)) {
+-                    final Set<HorizontalSide> hSides = undefs.get(hInter);
+-                    boolean linked = false;
+-
+-                    if (hSides != null) {
+-                        final HeadInter head = (HeadInter) hInter;
+-                        final Point headCenter = head.getCenter();
+-
+-                        for (HorizontalSide hSide : hSides) {
+-                            final SLinker sl = head.getLinker().getSLinkers().get(hSide);
+-                            logger.debug("{} undef  {}", head, sl);
+-                            // TODO: fix this?
+-                            //
+-                            // // If we have a VERTICAL_SEED on side, try a stem link
+-                            // final Glyph stump = sl.getStump();
+-                            //
+-                            // if (stump != null && stump.isVerticalSeed()) {
+-                            //     final Point stumpCenter = stump.getCenter();
+-                            //     final VerticalSide vSide = stumpCenter.y < headCenter.y
+-                            //             ? TOP : BOTTOM;
+-                            //     final CLinker cl = sl.getCornerLinker(vSide);
+-                            //     linked |= cl.link(0, 0, true);
+-                            // }
+-                        }
+-                    }
+-
+-                    if (!linked) {
+-                        hInter.setAbnormal(true);
+-                    }
++                    // A stem-needing head with no stem link is abnormal.
++                    // NOTE: a former attempt to re-link the head to a vertical seed
++                    // was disabled (see git history) because it proved unreliable.
++                    hInter.setAbnormal(true);
+                 }
+             }
+         }
+diff --git a/app/src/main/java/org/audiveris/omr/sig/inter/BarlineInter.java b/app/src/main/java/org/audiveris/omr/sig/inter/BarlineInter.java
+index 1c9277a..dd57199 100644
+--- a/app/src/main/java/org/audiveris/omr/sig/inter/BarlineInter.java
++++ b/app/src/main/java/org/audiveris/omr/sig/inter/BarlineInter.java
+@@ -22,6 +22,7 @@
+ package org.audiveris.omr.sig.inter;
+ 
+ import org.audiveris.omr.glyph.Glyph;
++import org.audiveris.omr.glyph.Grades;
+ import org.audiveris.omr.glyph.Shape;
+ import org.audiveris.omr.sheet.PartBarline;
+ import org.audiveris.omr.sheet.Sheet;
+@@ -303,7 +304,7 @@ public class BarlineInter
+     @Override
+     public boolean isGood ()
+     {
+-        return getGrade() >= 0.6; // TODO, quick & dirty
++        return getGrade() >= Grades.goodBarlineGrade;
+     }
+ 
+     //------------//
+diff --git a/app/src/main/java/org/audiveris/omr/text/TextLine.java b/app/src/main/java/org/audiveris/omr/text/TextLine.java
+index aa43d07..a3a1a9d 100644
+--- a/app/src/main/java/org/audiveris/omr/text/TextLine.java
++++ b/app/src/main/java/org/audiveris/omr/text/TextLine.java
+@@ -427,8 +427,9 @@ public class TextLine
+     {
+         int pointSize = word.getFontInfo().pointSize;
+ 
+-        // TODO: very rough value to be refined and explained!
+-        int val = (int) Math.rint((constants.maxCharDx.getValue() * pointSize) / 2.0);
++        // Max gap between two chars in a word, as a ratio of the word point size
++        int val = (int) Math.rint(constants.maxCharDx.getValue() * pointSize * constants
++                .charGapFontRatio.getValue());
+ 
+         return val;
+     }
+@@ -946,5 +947,9 @@ public class TextLine
+         private final Scale.Fraction maxCharDx = new Scale.Fraction(
+                 1.0,
+                 "Max horizontal gap between two chars in a word");
++
++        private final Constant.Ratio charGapFontRatio = new Constant.Ratio(
++                0.5,
++                "Max gap between two chars in a word, as a ratio of the word point size");
+     }
+ }
+diff --git a/app/src/test/java/org/audiveris/omr/math/RationalTest.java b/app/src/test/java/org/audiveris/omr/math/RationalTest.java
+index daf1987..a9b65ec 100644
+--- a/app/src/test/java/org/audiveris/omr/math/RationalTest.java
++++ b/app/src/test/java/org/audiveris/omr/math/RationalTest.java
+@@ -71,6 +71,24 @@ public class RationalTest
+         assertEquals(1, Rational.MAX_VALUE.compareTo(instance));
+     }
+ 
++    /**
++     * Test of compareTo method, of class Rational, with values whose
++     * cross-products overflow the int range.
++     */
++    @Test
++    public void testCompareToOverflow ()
++    {
++        System.out.println("compareToOverflow");
++
++        // this = 1_500_000_000, that = 1_000_000_000/3 (approx 333_333_333)
++        // The cross-product this.num * that.den = 4_500_000_000 overflows an int.
++        final Rational big = new Rational(1_500_000_000, 1);
++        final Rational third = new Rational(1_000_000_000, 3);
++
++        assertEquals(1, big.compareTo(third));
++        assertEquals(-1, third.compareTo(big));
++    }
++
+     /**
+      * Test of divides method, of class Rational.
+      */

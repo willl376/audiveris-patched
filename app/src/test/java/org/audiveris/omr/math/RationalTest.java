@@ -72,6 +72,24 @@ public class RationalTest
     }
 
     /**
+     * Test of compareTo method, of class Rational, with values whose
+     * cross-products overflow the int range.
+     */
+    @Test
+    public void testCompareToOverflow ()
+    {
+        System.out.println("compareToOverflow");
+
+        // this = 1_500_000_000, that = 1_000_000_000/3 (approx 333_333_333)
+        // The cross-product this.num * that.den = 4_500_000_000 overflows an int.
+        final Rational big = new Rational(1_500_000_000, 1);
+        final Rational third = new Rational(1_000_000_000, 3);
+
+        assertEquals(1, big.compareTo(third));
+        assertEquals(-1, third.compareTo(big));
+    }
+
+    /**
      * Test of divides method, of class Rational.
      */
     @Test

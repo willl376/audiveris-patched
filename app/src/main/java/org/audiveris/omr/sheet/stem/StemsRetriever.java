@@ -319,38 +319,13 @@ public class StemsRetriever
      */
     private void checkNeededStems (List<Inter> systemHeads)
     {
-        HeadLoop:
         for (Inter hInter : systemHeads) {
             if (ShapeSet.StemHeads.contains(hInter.getShape())) {
                 if (!sig.hasRelation(hInter, HeadStemRelation.class)) {
-                    final Set<HorizontalSide> hSides = undefs.get(hInter);
-                    boolean linked = false;
-
-                    if (hSides != null) {
-                        final HeadInter head = (HeadInter) hInter;
-                        final Point headCenter = head.getCenter();
-
-                        for (HorizontalSide hSide : hSides) {
-                            final SLinker sl = head.getLinker().getSLinkers().get(hSide);
-                            logger.debug("{} undef  {}", head, sl);
-                            // TODO: fix this?
-                            //
-                            // // If we have a VERTICAL_SEED on side, try a stem link
-                            // final Glyph stump = sl.getStump();
-                            //
-                            // if (stump != null && stump.isVerticalSeed()) {
-                            //     final Point stumpCenter = stump.getCenter();
-                            //     final VerticalSide vSide = stumpCenter.y < headCenter.y
-                            //             ? TOP : BOTTOM;
-                            //     final CLinker cl = sl.getCornerLinker(vSide);
-                            //     linked |= cl.link(0, 0, true);
-                            // }
-                        }
-                    }
-
-                    if (!linked) {
-                        hInter.setAbnormal(true);
-                    }
+                    // A stem-needing head with no stem link is abnormal.
+                    // NOTE: a former attempt to re-link the head to a vertical seed
+                    // was disabled (see git history) because it proved unreliable.
+                    hInter.setAbnormal(true);
                 }
             }
         }
