@@ -314,23 +314,31 @@ public class UnitTreeTable
         // Selection on tree side
         tree.setSelectionPaths(paths.toArray(TreePath[]::new));
 
-        // Selection on table side
-        clearSelection();
+        // Selection on table side.
+        // Mark this as a batch: JTreeTable then updates the tree selection
+        // once at the end instead of once per row, avoiding quadratic work.
+        getSelectionModel().setValueIsAdjusting(true);
 
-        final List<Integer> rows = new ArrayList<>();
+        try {
+            clearSelection();
 
-        for (TreePath path : paths) {
-            int row = tree.getRowForPath(path);
+            final List<Integer> rows = new ArrayList<>();
 
-            if (row != -1) {
-                rows.add(row);
-                addRowSelectionInterval(row, row);
+            for (TreePath path : paths) {
+                int row = tree.getRowForPath(path);
+
+                if (row != -1) {
+                    rows.add(row);
+                    addRowSelectionInterval(row, row);
+                }
             }
+
+            Collections.sort(rows);
+
+            return rows;
+        } finally {
+            getSelectionModel().setValueIsAdjusting(false);
         }
-
-        Collections.sort(rows);
-
-        return rows;
     }
 
     //~ Inner Classes ------------------------------------------------------------------------------

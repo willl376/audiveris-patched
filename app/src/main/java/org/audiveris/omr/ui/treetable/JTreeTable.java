@@ -282,7 +282,13 @@ public class JTreeTable
             @Override
             public void valueChanged (ListSelectionEvent e)
             {
-                updateSelectedPathsFromSelectedRows();
+                // A batch selection (see UnitTreeTable#setNodesSelection) fires
+                // one event per row. Updating the tree on every intermediate
+                // event makes a large search quadratic. Wait for the final
+                // event instead; the result is identical.
+                if (!e.getValueIsAdjusting()) {
+                    updateSelectedPathsFromSelectedRows();
+                }
             }
         }
     }

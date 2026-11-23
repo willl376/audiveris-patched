@@ -858,9 +858,10 @@ public class TextLine
     public static Comparator<TextLine> byAbscissa (final Skew skew)
     {
         return (TextLine line1,
-                TextLine line2) -> Double.compare(
-                        line1.getDskOrigin(skew).getX(), //
-                        line2.getDskOrigin(skew).getX());
+                TextLine line2) -> compareOrigins(
+                        line1.getDskOrigin(skew),
+                        line2.getDskOrigin(skew),
+                        true);
     }
 
     /**
@@ -872,9 +873,41 @@ public class TextLine
     public static Comparator<TextLine> byOrdinate (final Skew skew)
     {
         return (TextLine line1,
-                TextLine line2) -> Double.compare(
-                        line1.getDskOrigin(skew).getY(), //
-                        line2.getDskOrigin(skew).getY());
+                TextLine line2) -> compareOrigins(
+                        line1.getDskOrigin(skew),
+                        line2.getDskOrigin(skew),
+                        false);
+    }
+
+    /**
+     * Compare two de-skewed origins, tolerating a missing origin.
+     *
+     * A text line with no words has no baseline and thus no de-skewed
+     * origin. Sorting such lines must not throw a NullPointerException
+     * (Audiveris issue seen on "It Had to Be You", page 5). Lines without
+     * an origin are placed first; the two comparators remain consistent
+     * with Double.compare on non-null origins.
+     *
+     * @param o1 first origin, possibly null
+     * @param o2 second origin, possibly null
+     * @param useX true to compare abscissas, false for ordinates
+     * @return the comparison result
+     */
+    private static int compareOrigins (final Point2D o1,
+                                       final Point2D o2,
+                                       final boolean useX)
+    {
+        if (o1 == o2) {
+            return 0;
+        }
+        if (o1 == null) {
+            return -1;
+        }
+        if (o2 == null) {
+            return 1;
+        }
+        return useX ? Double.compare(o1.getX(), o2.getX())
+                    : Double.compare(o1.getY(), o2.getY());
     }
 
     //------//

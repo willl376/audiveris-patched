@@ -1183,7 +1183,12 @@ public class TextBuilder
             }
         }
 
-        // Gather and sort all lines (standard & lyrics)
+        // Gather and sort all lines (standard & lyrics).
+        // A line with no words has no baseline (hence no de-skewed origin);
+        // it cannot be meaningfully composed, so drop it before sorting.
+        standards.removeIf(line -> line.getBaseline() == null);
+        lyrics.removeIf(line -> line.getBaseline() == null);
+
         List<TextLine> allLines = new ArrayList<>();
         allLines.addAll(lyrics);
         allLines.addAll(standards);
